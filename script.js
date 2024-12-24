@@ -49,26 +49,25 @@ function createGrid() {
         const box = document.createElement('div');
         box.classList.add('grid-item');
         grid.appendChild(box);
-        box.textContent = i + 1;
+        //box.textContent = i + 1;
     }
 
-    const totalGridSize = GRID_ROWS * GRID_COLS; // Calculate the total grid size
-    const emptyCells = totalGridSize - totalCells; // Determine if there are empty cells
+    const totalGridSize = GRID_ROWS * GRID_COLS; 
+    const emptyCells = totalGridSize - totalCells; 
     for (let i = 0; i < emptyCells; i++) {
         const emptyBox = document.createElement('div');
-        emptyBox.classList.add('grid-item', 'empty-cell'); // Mark as empty
+        emptyBox.classList.add('grid-item', 'empty-cell'); 
         grid.appendChild(emptyBox);
     }
 }
 
 function resetGame() {
     currentScore = 0;
-    totalCells = randomizeGridAndTries(); // Recalculate totalCells
-    createGrid(); // Generate the grid based on GRID_ROWS and GRID_COLS
-    updateStats(); // Pass totalCells to updateStats
+    totalCells = randomizeGridAndTries(); 
+    createGrid(); 
+    updateStats(); 
 }
 
-// Call resetGame after page load to ensure grid is initialized
 window.onload = function () {
     resetGame();
 };
@@ -94,9 +93,9 @@ function rollDice() {
 
     const diceValue = Math.floor(Math.random() * 6) + 1;
 
-    const levelTarget = totalCells; 
+    const levelTarget = totalCells;
 
-    const remainingCells = totalCells - currentScore; 
+    const remainingCells = totalCells - currentScore;
     tries--;
 
     if (diceValue <= remainingCells) {
@@ -132,16 +131,25 @@ function rollDice() {
         6: 'orange'
     };
 
+    // Update the grid cells based on the dice roll, without clearing previous paths
     for (let i = Math.max(0, currentScore - diceValue); i < currentScore; i++) {
         const cellIndex = i % totalCells;
         const cell = gridItems[cellIndex];
-        cell.style.backgroundColor = diceColors[diceValue];
+        
+        // If the cell has no color, add it. Otherwise, retain the previous color.
+        if (!cell.style.backgroundColor) {
+            cell.style.backgroundColor = diceColors[diceValue];
+        } else {
+            // Optionally, you can add logic to mix colors for previously visited cells
+            // e.g., blending new color with old color, or keeping the first color.
+        }
+
         cell.textContent = cellIndex + 1;
         cell.style.color = 'white';
     }
 
+    // Place the bead in the correct cell
     let currentCell = gridItems[currentCellIndex];
-
     if (beadImage.parentElement) {
         beadImage.parentElement.removeChild(beadImage);
     }
@@ -149,37 +157,36 @@ function rollDice() {
     beadImage.style.display = 'block';
     currentCell.appendChild(beadImage);
 
-    updateStats(); // Update the target score and other stats after the dice roll
+    updateStats();
 
-    // Check if the player has reached the target score
+    // Level up if score reaches target
     if (currentScore == levelTarget) {
         isLevelingUp = true;
     
         level++;
         tries = Math.floor(Math.random() * (15 - 12 + 1)) + 12; 
-        resetGameforNextLevel();  // Reset for next level without resetting score
+        resetGameforNextLevel();  
     
         const newGridItems = document.querySelectorAll('.grid-item');
         const firstCell = newGridItems[0];  
     
         if (beadImage.parentElement) {
-            beadImage.parentElement.removeChild(beadImage);  // Remove bead image from old position
+            beadImage.parentElement.removeChild(beadImage);  
         }
     
         beadImage.style.display = 'block';
-        firstCell.appendChild(beadImage);  // Move bead to the first cell
+        firstCell.appendChild(beadImage);  
     
-        // Reset current score to 0
-        currentScore = 0;
+        currentScore = 0;  // Reset current score after leveling up
 
-        // Now start fresh for the new level
         showModal(`Congratulations! You've reached level ${level}.`);
     
         setTimeout(() => {
             isLevelingUp = false; 
         }, 2000); 
-    }    
+    }
 
+    // Update high score and high level
     if (currentScore > highScore) {
         highScore = currentScore;
         localStorage.setItem('highScore', highScore);
@@ -190,7 +197,7 @@ function rollDice() {
         localStorage.setItem('highLevel', highLevel);
     }
 
-    updateStats(); // Update the stats again after the level change
+    updateStats(); 
 }
 
 function resetGameforNextLevel() {
@@ -198,18 +205,17 @@ function resetGameforNextLevel() {
     createGrid();
     updateStats();
 
+    // Reset grid styles and place bead in the first cell
     const newGridItems = document.querySelectorAll('.grid-item');
-    const firstCell = newGridItems[0]; // Start at the first cell
+    const firstCell = newGridItems[0]; 
 
     if (beadImage.parentElement) {
-        beadImage.parentElement.removeChild(beadImage); // Remove from old position
+        beadImage.parentElement.removeChild(beadImage); 
     }
 
     beadImage.style.display = 'block';
-    firstCell.appendChild(beadImage); // Move to the first cell
-
-    // Reset current score to 0 here
-    currentScore = 0; // Ensure score starts at 0 after level up
+    firstCell.appendChild(beadImage);
+    currentScore = 0;  // Reset score here
 }
 
 document.getElementById('roll-dice').addEventListener('click', rollDice);
