@@ -13,19 +13,23 @@ const closeModalBtn = document.getElementById('close-modal');
 const modalMessage = document.getElementById('modal-message');
 
 let GRID_ROWS, GRID_COLS, tries, level = 1, currentScore = 0;
+let totalCells; 
 
 let highScore = localStorage.getItem('highScore') ? parseInt(localStorage.getItem('highScore')) : 0;
 let highLevel = localStorage.getItem('highLevel') ? parseInt(localStorage.getItem('highLevel')) : 1;
 
 function randomizeGridAndTries() {
     do {
-        GRID_ROWS = Math.floor(Math.random() * (7 - 5 + 1)) + 5;
-        GRID_COLS = Math.floor(Math.random() * (8 - 6 + 1)) + 6;
-    } while (GRID_ROWS * GRID_COLS < 30 || GRID_ROWS * GRID_COLS > 60);
+        totalCells = Math.floor(Math.random() * (50 - 30 + 1)) + 30;
+    } while (totalCells < 30 || totalCells > 50);
 
-    tries = Math.floor(Math.random() * (15 - 12 + 1)) + 12;
+    GRID_ROWS = Math.floor(Math.sqrt(totalCells));
+    GRID_COLS = Math.ceil(totalCells / GRID_ROWS); 
+
+    tries = Math.floor(Math.random() * (15 - 12 + 1)) + 12; 
+
+    return totalCells; 
 }
-
 
 function updateStats() {
     levelEl.textContent = level;
@@ -33,27 +37,41 @@ function updateStats() {
     triesEl.textContent = tries;
     highScoreEl.textContent = highScore;
     highLevelEl.textContent = highLevel;
-    targetScoreEl.textContent = GRID_ROWS * GRID_COLS;
+    targetScoreEl.textContent = totalCells; 
 }
 
 function createGrid() {
-    grid.innerHTML = '';
-    grid.style.gridTemplateColumns = `repeat(${GRID_COLS}, 70px)`;
-    for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
+    grid.innerHTML = ''; 
+    grid.style.display = 'grid'; 
+    grid.style.gridTemplateColumns = `repeat(${GRID_COLS}, 70px)`; 
+
+    for (let i = 0; i < totalCells; i++) {
         const box = document.createElement('div');
         box.classList.add('grid-item');
         grid.appendChild(box);
+        box.textContent = i + 1;
+    }
+
+    const totalGridSize = GRID_ROWS * GRID_COLS; // Calculate the total grid size
+    const emptyCells = totalGridSize - totalCells; // Determine if there are empty cells
+    for (let i = 0; i < emptyCells; i++) {
+        const emptyBox = document.createElement('div');
+        emptyBox.classList.add('grid-item', 'empty-cell'); // Mark as empty
+        grid.appendChild(emptyBox);
     }
 }
 
 function resetGame() {
-    randomizeGridAndTries();
-    level = 1;
     currentScore = 0;
-    createGrid();
-    updateStats();
+    totalCells = randomizeGridAndTries(); // Recalculate totalCells
+    createGrid(); // Generate the grid based on GRID_ROWS and GRID_COLS
+    updateStats(); // Pass totalCells to updateStats
 }
 
+// Call resetGame after page load to ensure grid is initialized
+window.onload = function () {
+    resetGame();
+};
 
 function showModal(message) {
     modalMessage.textContent = message;  
@@ -66,7 +84,7 @@ closeModalBtn.addEventListener('click', () => {
 
 let isLevelingUp = false;
 function rollDice() {
-    if (tries <= 0 || isLevelingUp) { 
+    if (tries <= 0 || isLevelingUp) {
         statTriesEl.classList.add('flash-red');
         setTimeout(() => {
             statTriesEl.classList.remove('flash-red');
@@ -76,13 +94,10 @@ function rollDice() {
 
     const diceValue = Math.floor(Math.random() * 6) + 1;
 
-    const levelTarget = level * GRID_ROWS * GRID_COLS;
-    const remainingCells = GRID_ROWS * GRID_COLS - currentScore;  
+    const levelTarget = totalCells; 
 
-    if (diceValue > remainingCells) {
-        showModal(`You can't move past the last cell! Only ${remainingCells} steps left.`);
-    }
-    tries--; 
+    const remainingCells = totalCells - currentScore; 
+    tries--;
 
     if (diceValue <= remainingCells) {
         currentScore += diceValue;
@@ -102,10 +117,10 @@ function rollDice() {
     diceImageEl.style.display = 'block';
 
     const gridItems = document.querySelectorAll('.grid-item');
-    let currentCellIndex = (currentScore % (GRID_ROWS * GRID_COLS)) - 1;
+    let currentCellIndex = (currentScore % totalCells) - 1;
 
     if (currentCellIndex < 0) {
-        currentCellIndex = GRID_ROWS * GRID_COLS - 1;
+        currentCellIndex = totalCells - 1;
     }
 
     const diceColors = {
@@ -118,7 +133,7 @@ function rollDice() {
     };
 
     for (let i = Math.max(0, currentScore - diceValue); i < currentScore; i++) {
-        const cellIndex = i % (GRID_ROWS * GRID_COLS);
+        const cellIndex = i % totalCells;
         const cell = gridItems[cellIndex];
         cell.style.backgroundColor = diceColors[diceValue];
         cell.textContent = cellIndex + 1;
@@ -134,33 +149,36 @@ function rollDice() {
     beadImage.style.display = 'block';
     currentCell.appendChild(beadImage);
 
-    updateStats();
+    updateStats(); // Update the target score and other stats after the dice roll
 
+    // Check if the player has reached the target score
     if (currentScore == levelTarget) {
         isLevelingUp = true;
-
+    
         level++;
         tries = Math.floor(Math.random() * (15 - 12 + 1)) + 12; 
-        resetGameforNextLevel(); 
-
-        const newGridItems = document.querySelectorAll('.grid-item'); 
+        resetGameforNextLevel();  // Reset for next level without resetting score
+    
+        const newGridItems = document.querySelectorAll('.grid-item');
         const firstCell = newGridItems[0];  
-
+    
         if (beadImage.parentElement) {
-            beadImage.parentElement.removeChild(beadImage);
+            beadImage.parentElement.removeChild(beadImage);  // Remove bead image from old position
         }
-
+    
         beadImage.style.display = 'block';
-        firstCell.appendChild(beadImage);
-
+        firstCell.appendChild(beadImage);  // Move bead to the first cell
+    
+        // Reset current score to 0
         currentScore = 0;
 
+        // Now start fresh for the new level
         showModal(`Congratulations! You've reached level ${level}.`);
-
+    
         setTimeout(() => {
             isLevelingUp = false; 
         }, 2000); 
-    }
+    }    
 
     if (currentScore > highScore) {
         highScore = currentScore;
@@ -172,15 +190,27 @@ function rollDice() {
         localStorage.setItem('highLevel', highLevel);
     }
 
-    updateStats();
+    updateStats(); // Update the stats again after the level change
 }
 
 function resetGameforNextLevel() {
     randomizeGridAndTries();
     createGrid();
     updateStats();
-}
 
+    const newGridItems = document.querySelectorAll('.grid-item');
+    const firstCell = newGridItems[0]; // Start at the first cell
+
+    if (beadImage.parentElement) {
+        beadImage.parentElement.removeChild(beadImage); // Remove from old position
+    }
+
+    beadImage.style.display = 'block';
+    firstCell.appendChild(beadImage); // Move to the first cell
+
+    // Reset current score to 0 here
+    currentScore = 0; // Ensure score starts at 0 after level up
+}
 
 document.getElementById('roll-dice').addEventListener('click', rollDice);
 document.getElementById('reset-game').addEventListener('click', resetGame);
