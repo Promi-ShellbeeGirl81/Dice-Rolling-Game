@@ -11,7 +11,7 @@ function startGame(event) {
 
     setTimeout(function() {
       startingMessage.style.opacity = '0'; 
-      window.location.href = 'game.html';  
+      window.location.href = '../HTML/game.html';  
     }, 1000); 
   } else {
     alert("Please enter a valid username.");
