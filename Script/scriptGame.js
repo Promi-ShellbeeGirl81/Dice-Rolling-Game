@@ -16,7 +16,7 @@ const username = localStorage.getItem('username');
 if (username) {
     document.getElementById('user-name').textContent = username;
 } else {
-    document.getElementById('user-name').textContent = 'Guest'; 
+    document.getElementById('user-name').textContent = 'Guest';
 }
 
 let GRID_ROWS, GRID_COLS, tries, level = 1, currentScore = 0;
@@ -26,13 +26,11 @@ let highScore = localStorage.getItem('highScore') ? parseInt(localStorage.getIte
 let highLevel = localStorage.getItem('highLevel') ? parseInt(localStorage.getItem('highLevel')) : 1;
 let totalScore = localStorage.getItem('totalScore') ? parseInt(localStorage.getItem('totalScore')) : 0;
 
-let isLevelingUp = false; 
-let rollCooldown = false; 
+let isLevelingUp = false;
+let rollCooldown = false;
 
 function randomizeGridAndTries() {
-    do {
-        totalCells = Math.floor(Math.random() * (50 - 30 + 1)) + 30;
-    } while (totalCells < 30 || totalCells > 50);
+    totalCells = Math.floor(Math.random() * (50 - 30 + 1)) + 30;
 
     GRID_ROWS = Math.floor(Math.sqrt(totalCells));
     GRID_COLS = Math.ceil(totalCells / GRID_ROWS);
@@ -63,15 +61,15 @@ function createGrid() {
 
 function resetGame() {
     currentScore = 0;
-    totalScore = 0; 
+    totalScore = 0;
     level = 1;
 
     localStorage.setItem('totalScore', totalScore);
     localStorage.setItem('highScore', highScore);
     localStorage.setItem('highLevel', highLevel);
 
-    randomizeGridAndTries();  
-    createGrid();  
+    randomizeGridAndTries();
+    createGrid();
     updateStats();
 
     console.log('Game Reset: Current Score:', currentScore);
@@ -80,40 +78,41 @@ function resetGame() {
     console.log('High Level:', highLevel);
 }
 
-function updateStats() {
-    levelEl.textContent = level;
-    triesEl.textContent = tries;
-    highScoreEl.textContent = highScore;
-    highLevelEl.textContent = highLevel;
-    targetScoreEl.textContent = totalCells; 
-
-    document.getElementById('total-score').textContent = totalScore + currentScore;  
-}
-
+let colorIndex = 0;
 
 function rollDice() {
-    if (tries <= 0 || isLevelingUp || rollCooldown) {
-        statTriesEl.classList.add('flash-red');
-        setTimeout(() => {
-            statTriesEl.classList.remove('flash-red');
-        }, 1500);
-        showModal(`You lost. Better luck next time.`);
-        return;
-    }
+    if (isLevelingUp || rollCooldown) return;
 
     const diceValue = Math.floor(Math.random() * 6) + 1;
     const levelTarget = totalCells;
     const remainingCells = totalCells - currentScore;
+
     tries--;
+
+    if (tries === 0) {
+        statTriesEl.classList.add('flash-red');
+        setTimeout(() => {
+            statTriesEl.classList.remove('flash-red');
+        }, 900);
+        updateStats();
+        showModal(`You lost. Better luck next time.`);
+
+        setTimeout(() => {
+            levelUpModal.style.display = 'none';
+        }, 2000);
+
+        resetGame();
+
+        return;
+    }
 
     if (diceValue <= remainingCells) {
         currentScore += diceValue;
     }
 
     const diceColors = ['red', 'blue', 'green', 'magenta', 'purple', 'orange'];
-    diceImageEl.style.boxShadow = `0 0 20px ${diceColors[diceValue - 1]}`;
-    diceImageEl.src = `../images/${diceValue}.png`;
-    diceImageEl.style.display = 'block';
+    const newColor = diceColors[colorIndex];
+    colorIndex = (colorIndex + 1) % diceColors.length;
 
     const gridItems = document.querySelectorAll('.grid-item');
     let currentCellIndex = (currentScore % totalCells) - 1;
@@ -126,12 +125,14 @@ function rollDice() {
         const cellIndex = i % totalCells;
         const cell = gridItems[cellIndex];
         if (!cell.style.backgroundColor) {
-            cell.style.backgroundColor = diceColors[diceValue - 1];
+            cell.style.backgroundColor = newColor;
         }
         cell.textContent = cellIndex + 1;
         cell.style.color = 'white';
     }
 
+    diceImageEl.style.boxShadow = `0 0 20px ${newColor}`;
+    diceImageEl.src = `../images/${diceValue}.png`;
     const currentCell = gridItems[currentCellIndex];
     if (beadImage.parentElement) {
         beadImage.parentElement.removeChild(beadImage);
@@ -144,7 +145,6 @@ function rollDice() {
         levelUp();
     }
 
-    // Update high score if necessary
     if (currentScore + totalScore > highScore) {
         highScore = currentScore + totalScore;
         localStorage.setItem('highScore', highScore);
@@ -155,14 +155,32 @@ function rollDice() {
         localStorage.setItem('highLevel', highLevel);
     }
 
-    /*console.log('Dice Value:', diceValue);
-    console.log('Current Score:', currentScore);
-    console.log('Total Score:', totalScore);*/
-    
-    document.getElementById('total-score').textContent = currentScore + totalScore;  
+    document.getElementById('total-score').textContent = currentScore + totalScore;
 
     updateStats();
 }
+
+
+function showModal(message, onConfirm) {
+    modalMessage.textContent = message;
+    levelUpModal.style.display = 'block';
+
+    closeModalBtn.onclick = () => {
+        levelUpModal.style.display = 'none';
+        if (onConfirm) onConfirm();
+    };
+}
+
+function updateStats() {
+    levelEl.textContent = level;
+    triesEl.textContent = tries;
+    highScoreEl.textContent = highScore;
+    highLevelEl.textContent = highLevel;
+    targetScoreEl.textContent = totalCells;
+
+    document.getElementById('total-score').textContent = totalScore + currentScore;
+}
+
 
 function levelUp() {
     if (isLevelingUp) return;
@@ -173,28 +191,27 @@ function levelUp() {
 
     showModal(`Congratulations! You've reached level ${level}.`);
 
-    totalScore += currentScore; 
-    localStorage.setItem('totalScore', totalScore); 
-    currentScore = 0; 
+    setTimeout(() => {
+        levelUpModal.style.display = 'none';
+    }, 1800);
+
+    totalScore += currentScore;
+    localStorage.setItem('totalScore', totalScore);
+    currentScore = 0;
 
     console.log('Level Up: Current Score:', currentScore);
     console.log('Total Score (after level up):', totalScore);
 
-    document.getElementById('total-score').textContent = totalScore + currentScore;  
+    document.getElementById('total-score').textContent = totalScore + currentScore;
 
     updateStats();
 
     setTimeout(() => {
-        randomizeGridAndTries();  
-        createGrid();  
-        updateStats();  
-        isLevelingUp = false;  
-    }, 2000);
-}
-
-function showModal(message) {
-    modalMessage.textContent = message;
-    levelUpModal.style.display = 'block';
+        randomizeGridAndTries();
+        createGrid();
+        updateStats();
+        isLevelingUp = false;
+    }, 1800);
 }
 
 closeModalBtn.addEventListener('click', () => {
