@@ -132,7 +132,7 @@ function rollDice() {
     }
 
     diceImageEl.style.boxShadow = `0 0 20px ${newColor}`;
-    diceImageEl.src = `./images/${diceValue}.png`;
+    diceImageEl.src = `../images/${diceValue}.png`;
     const currentCell = gridItems[currentCellIndex];
     if (beadImage.parentElement) {
         beadImage.parentElement.removeChild(beadImage);
