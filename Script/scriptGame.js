@@ -97,6 +97,7 @@ function rollDice() {
         setTimeout(() => {
             statTriesEl.classList.remove('flash-red');
         }, 1500);
+        showModal(`You lost. Better luck next time.`);
         return;
     }
 
